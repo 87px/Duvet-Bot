@@ -9,7 +9,9 @@ import "dotenv/config";
 import * as fs from "fs";
 import * as path from "path";
 
+
 const { TOKEN } = process.env;
+
 
 interface CustomClient extends Client {
   commands: Collection<string, any>;
