@@ -1,7 +1,13 @@
-import { Client, Collection, GatewayIntentBits, Events, IntentsBitField } from 'discord.js';
-import 'dotenv/config';
-import * as fs from 'fs';
-import * as path from 'path';
+import {
+  Client,
+  Collection,
+  GatewayIntentBits,
+  Events,
+  IntentsBitField,
+} from "discord.js";
+import "dotenv/config";
+import * as fs from "fs";
+import * as path from "path";
 
 const { TOKEN } = process.env;
 
@@ -14,10 +20,15 @@ interface CustomClient extends Client {
 
 class MyClient extends Client implements CustomClient {
   commands: Collection<string, any>;
-  
+
   constructor() {
     super({
-      intents: [GatewayIntentBits.Guilds, IntentsBitField.Flags.Guilds, IntentsBitField.Flags.GuildMessages, IntentsBitField.Flags.GuildMembers],
+      intents: [
+        GatewayIntentBits.Guilds,
+        IntentsBitField.Flags.Guilds,
+        IntentsBitField.Flags.GuildMessages,
+        IntentsBitField.Flags.GuildMembers,
+      ],
     });
     this.commands = new Collection();
   }
@@ -37,17 +48,19 @@ class MyClient extends Client implements CustomClient {
 
 const client = new MyClient();
 
-const commandsPath = path.join(__dirname, "commands");
-const commandFiles = fs.readdirSync(commandsPath).filter((file: string) => file.endsWith('.ts'));
+const commandsPath = path.join(__dirname, "../commands");
+const commandFiles = fs
+  .readdirSync(commandsPath)
+  .filter((file: string) => file.endsWith(".ts"));
 
 for (const file of commandFiles) {
-    const filePath = path.join(commandsPath, file);
-    const command = require(filePath);
-    if ("data" in command && "execute" in command) {
-        client.commands.set(command.data.name, command);
-    } else {
-        console.log(`Command in ${filePath} doesn't have "data" or "execute".`);
-    }
+  const filePath = path.join(commandsPath, file);
+  const command = require(filePath);
+  if ("data" in command && "execute" in command) {
+    client.commands.set(command.data.name, command);
+  } else {
+    console.log(`Command in ${filePath} doesn't have "data" or "execute".`);
+  }
 }
 
 client.once(Events.ClientReady, (c: any) => {
@@ -57,16 +70,16 @@ client.once(Events.ClientReady, (c: any) => {
 client.login(TOKEN);
 
 client.on(Events.InteractionCreate, async (interaction: any) => {
-    if (!interaction.isChatInputCommand()) return;
-    const command:any = client.commands.get(interaction.commandName);
-    if(!command) {
-        console.error('Cannot find this command.');
-        return;
-    }
-    try {
-        await command.execute(interaction);
-    } catch(e) {
-        console.error(e);
-        await interaction.reply('Got an error.');
-    }
+  if (!interaction.isChatInputCommand()) return;
+  const command: any = client.commands.get(interaction.commandName);
+  if (!command) {
+    console.error("Cannot find this command.");
+    return;
+  }
+  try {
+    await command.execute(interaction);
+  } catch (e) {
+    console.error(e);
+    await interaction.reply("Got an error.");
+  }
 });
