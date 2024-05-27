@@ -1,36 +1,72 @@
-import { Client, GatewayIntentBits, Events, Collection } from "discord.js";
-import fs from "node:fs";
-import path from "node:path";
-import dotenv from "dotenv";
-dotenv.config();
+import { Client, Collection, GatewayIntentBits, Events, IntentsBitField } from 'discord.js';
+import 'dotenv/config';
+import * as fs from 'fs';
+import * as path from 'path';
 
-const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMembers,
-    GatewayIntentBits.MessageContent,
-  ],
-});
+const { TOKEN } = process.env;
 
-const eventsPath: string = path.join(__dirname, 'events');
-const eventFiles: string[] = fs.readdirSync(eventsPath).filter(file => file.endsWith('.ts'));
-
-interface Event {
-    name: string;
-    once: boolean;
-    execute: (...args: any[]) => void;
+interface CustomClient extends Client {
+  commands: Collection<string, any>;
+  login(token?: string): Promise<string>;
+  once(event: string | symbol, listener: (...args: any[]) => void): this;
+  on(event: string | symbol, listener: (...args: any[]) => void): this;
 }
 
-for (const file of eventFiles) {
-    const filePath: string = path.join(eventsPath, file);
-    const event: Event = require(filePath) as Event;
-    if (event.once) {
-        client.once(event.name, (...args: any[]) => event.execute(...args));
+class MyClient extends Client implements CustomClient {
+  commands: Collection<string, any>;
+  
+  constructor() {
+    super({
+      intents: [GatewayIntentBits.Guilds, IntentsBitField.Flags.Guilds, IntentsBitField.Flags.GuildMessages, IntentsBitField.Flags.GuildMembers],
+    });
+    this.commands = new Collection();
+  }
+
+  login(token?: string): Promise<string> {
+    return super.login(token);
+  }
+
+  once(event: string | symbol, listener: (...args: any[]) => void): this {
+    return super.once(event, listener);
+  }
+
+  on(event: string | symbol, listener: (...args: any[]) => void): this {
+    return super.on(event, listener);
+  }
+}
+
+const client = new MyClient();
+
+const commandsPath = path.join(__dirname, "commands");
+const commandFiles = fs.readdirSync(commandsPath).filter((file: string) => file.endsWith('.ts'));
+
+for (const file of commandFiles) {
+    const filePath = path.join(commandsPath, file);
+    const command = require(filePath);
+    if ("data" in command && "execute" in command) {
+        client.commands.set(command.data.name, command);
     } else {
-        client.on(event.name, (...args: any[]) => event.execute(...args));
+        console.log(`Command in ${filePath} doesn't have "data" or "execute".`);
     }
 }
 
-client.login(process.env.TOKEN);
+client.once(Events.ClientReady, (c: any) => {
+  console.log(`Tudo pronto com: ${c.user.tag}`);
+});
 
-export default client;
+client.login(TOKEN);
+
+client.on(Events.InteractionCreate, async (interaction: any) => {
+    if (!interaction.isChatInputCommand()) return;
+    const command:any = client.commands.get(interaction.commandName);
+    if(!command) {
+        console.error('Cannot find this command.');
+        return;
+    }
+    try {
+        await command.execute(interaction);
+    } catch(e) {
+        console.error(e);
+        await interaction.reply('Got an error.');
+    }
+});
