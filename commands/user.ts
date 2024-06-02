@@ -4,7 +4,7 @@ import { EmbedBuilder } from "discord.js";
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("user")
-    .setDescription("Provides information about the user."),
+    .setDescription("Providência informações sobre o usuário."),
   async execute(interaction: any) {
     const user = interaction.user;
     const member = interaction.member;
@@ -26,7 +26,7 @@ module.exports = {
         { name: "<:8879global:1219064726193963028> Entrou em:", value: `\`${joinDate}\`` }
       )
       .setTimestamp()
-      .setFooter({ text: `Requested by ${user.username}` });
+      .setFooter({ text: `Requisitado por: ${user.username}` });
 
     await interaction.reply({ embeds: [embed] });
   },

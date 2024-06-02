@@ -1,50 +1,22 @@
-import {
-  Client,
-  Collection,
-  GatewayIntentBits,
-  Events,
-  IntentsBitField,
-} from "discord.js";
+import { Client, Collection, GatewayIntentBits, Events } from "discord.js";
 import "dotenv/config";
 import * as fs from "fs";
-import * as path from "path";
-
+import path from "path";
 
 const { TOKEN } = process.env;
 
-
-interface CustomClient extends Client {
-  commands: Collection<string, any>;
-  login(token?: string): Promise<string>;
-  once(event: string | symbol, listener: (...args: any[]) => void): this;
-  on(event: string | symbol, listener: (...args: any[]) => void): this;
-}
-
-class MyClient extends Client implements CustomClient {
+class MyClient extends Client {
   commands: Collection<string, any>;
 
   constructor() {
     super({
       intents: [
         GatewayIntentBits.Guilds,
-        IntentsBitField.Flags.Guilds,
-        IntentsBitField.Flags.GuildMessages,
-        IntentsBitField.Flags.GuildMembers,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.GuildMembers,
       ],
     });
     this.commands = new Collection();
-  }
-
-  login(token?: string): Promise<string> {
-    return super.login(token);
-  }
-
-  once(event: string | symbol, listener: (...args: any[]) => void): this {
-    return super.once(event, listener);
-  }
-
-  on(event: string | symbol, listener: (...args: any[]) => void): this {
-    return super.on(event, listener);
   }
 }
 
@@ -61,15 +33,24 @@ for (const file of commandFiles) {
   if ("data" in command && "execute" in command) {
     client.commands.set(command.data.name, command);
   } else {
-    console.log(`Command in ${filePath} doesn't have "data" or "execute".`);
+    console.log(`Comando em ${filePath} não tem "execute" ou "data".`);
   }
 }
 
-client.once(Events.ClientReady, (c: any) => {
-  console.log(`Tudo pronto com: ${c.user.tag}`);
-});
+const eventsPath = path.join(__dirname, "../events");
+const eventFiles = fs
+  .readdirSync(eventsPath)
+  .filter((file) => file.endsWith(".ts"));
 
-client.login(TOKEN);
+for (const file of eventFiles) {
+  const filePath = path.join(eventsPath, file);
+  const event = require(filePath);
+  if (event.once) {
+    client.once(event.name, (...args) => event.execute(...args));
+  } else {
+    client.on(event.name, (...args) => event.execute(...args));
+  }
+}
 
 client.on(Events.InteractionCreate, async (interaction: any) => {
   if (!interaction.isChatInputCommand()) return;
@@ -85,3 +66,5 @@ client.on(Events.InteractionCreate, async (interaction: any) => {
     await interaction.reply("Got an error.");
   }
 });
+
+client.login(TOKEN);
