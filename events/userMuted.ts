@@ -2,31 +2,36 @@ import { EmbedBuilder, Events } from "discord.js";
 
 module.exports = {
   name: Events.GuildMemberUpdate,
-  execute(oldMember: any, newMember: any) {
-    const muteChannelId = "1244372814623019019";
-    const muteRoleId = "1246670034177364010";
+  async execute(oldMember: any, newMember: any) {
+    const muteRoleName = "Mutado";
+    const muteChannelName = "punições"; 
+
+    const muteRole = newMember.guild.roles.cache.find(
+      (role: any) => role.name === muteRoleName
+    );
+    if (!muteRole) return;
 
     if (
-      !oldMember.roles.cache.has(muteRoleId) &&
-      newMember.roles.cache.has(muteRoleId)
+      !oldMember.roles.cache.has(muteRole.id) &&
+      newMember.roles.cache.has(muteRole.id)
     ) {
-      const embed = new EmbedBuilder()
-        .setColor(0xff0000)
-        .setTitle("Usuário Mutado")
-        .addFields(
-          {
-            name: "Moderador",
-            value: `<@${newMember.client.user.id}>`,
-            inline: true,
-          },
-          { name: "Usuário", value: `<@${newMember.id}>`, inline: true }
-        )
-        .setTimestamp(new Date());
+      const muteChannel = newMember.guild.channels.cache.find(
+        (channel: any) => channel.name === muteChannelName && channel.isTextBased()
+      );
+      if (!muteChannel) return;
 
-      const channel = newMember.guild.channels.cache.get(muteChannelId);
-      if (channel.isTextBased()) {
-        channel.send({ embeds: [embed] });
-      }
+      const embed = new EmbedBuilder()
+        .setColor(0xdd3333)
+        .setTitle("🔇 Usuário Mutado")
+        .setDescription(`O usuário ${newMember.user.tag} foi mutado.`)
+        .addFields(
+          { name: "Moderador", value: "Desconhecido", inline: true }, 
+          { name: "Usuário", value: `${newMember}`, inline: true }
+        )
+        .setThumbnail(newMember.user.displayAvatarURL())
+        .setTimestamp();
+
+      muteChannel.send({ embeds: [embed] });
     }
   },
 };
