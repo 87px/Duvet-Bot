@@ -23,9 +23,7 @@ class MyClient extends Client {
 const client = new MyClient();
 
 const commandsPath = path.join(__dirname, "../commands");
-const commandFiles = fs
-  .readdirSync(commandsPath)
-  .filter((file: string) => file.endsWith(".ts"));
+const commandFiles = getCommandFiles(commandsPath);
 
 for (const file of commandFiles) {
   const filePath = path.join(commandsPath, file);
@@ -68,3 +66,18 @@ client.on(Events.InteractionCreate, async (interaction: any) => {
 });
 
 client.login(TOKEN);
+
+function getCommandFiles(dir: string): string[] {
+  const files = fs.readdirSync(dir);
+  let commandFiles: string[] = [];
+  for (const file of files) {
+    const filePath = path.join(dir, file);
+    const stat = fs.statSync(filePath);
+    if (stat.isDirectory()) {
+      commandFiles = commandFiles.concat(getCommandFiles(filePath));
+    } else if (file.endsWith(".ts")) {
+      commandFiles.push(file);
+    }
+  }
+  return commandFiles;
+}
