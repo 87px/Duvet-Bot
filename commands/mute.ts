@@ -1,5 +1,10 @@
 import { SlashCommandBuilder } from "discord.js";
-import { EmbedBuilder, GuildMember, PermissionsBitField } from "discord.js";
+import {
+  EmbedBuilder,
+  GuildMember,
+  PermissionsBitField,
+  TextChannel,
+} from "discord.js";
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -94,14 +99,25 @@ module.exports = {
         .setTimestamp()
         .setFooter({ text: `Silenciado por ${interaction.user.tag}` });
 
-      await interaction.reply({ embeds: [embed] });
+      const punishmentChannel = interaction.guild.channels.cache.find(
+        (channel: any) => channel.name === "punições" && channel.isTextBased()
+      ) as TextChannel;
+      if (punishmentChannel) {
+        await punishmentChannel.send({ embeds: [embed] });
+      } else {
+        console.log("Não foi possível encontrar o canal de punições.");
+      }
+
+      await interaction.reply({
+        content: "Ação de silenciamento registrada no canal de punições.",
+        ephemeral: true,
+      });
 
       setTimeout(async () => {
         await member.roles.remove(muteRole, "Tempo de silêncio expirado");
-        await interaction.followUp({
-          content: `${user.tag} não está mais silenciado.`,
-          ephemeral: true,
-        });
+        if (punishmentChannel) {
+          await punishmentChannel.send(`${user.tag} não está mais silenciado.`);
+        }
       }, time * 60000);
     } catch (error) {
       console.error("Erro ao tentar silenciar o usuário:", error);
