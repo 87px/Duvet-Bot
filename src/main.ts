@@ -23,12 +23,28 @@ class MyClient extends Client {
 const client = new MyClient();
 
 const commandsPath = path.join(__dirname, "../commands");
+
+function getCommandFiles(dir: any) {
+  let files: any = [];
+  const items = fs.readdirSync(dir, { withFileTypes: true });
+
+  for (const item of items) {
+    const itemPath = path.join(dir, item.name);
+    if (item.isDirectory()) {
+      files = files.concat(getCommandFiles(itemPath));
+    } else if (item.isFile() && item.name.endsWith('.ts')) {
+      files.push(itemPath);
+    }
+  }
+
+  return files;
+}
+
 const commandFiles = getCommandFiles(commandsPath);
 
-for (const file of commandFiles) {
-  const filePath = path.join(commandsPath, file);
+for (const filePath of commandFiles) {
   const command = require(filePath);
-  if ("data" in command && "execute" in command) {
+  if ('data' in command && 'execute' in command) {
     client.commands.set(command.data.name, command);
   } else {
     console.log(`Comando em ${filePath} não tem "execute" ou "data".`);
@@ -66,18 +82,3 @@ client.on(Events.InteractionCreate, async (interaction: any) => {
 });
 
 client.login(TOKEN);
-
-function getCommandFiles(dir: string): string[] {
-  const files = fs.readdirSync(dir);
-  let commandFiles: string[] = [];
-  for (const file of files) {
-    const filePath = path.join(dir, file);
-    const stat = fs.statSync(filePath);
-    if (stat.isDirectory()) {
-      commandFiles = commandFiles.concat(getCommandFiles(filePath));
-    } else if (file.endsWith(".ts")) {
-      commandFiles.push(file);
-    }
-  }
-  return commandFiles;
-}
