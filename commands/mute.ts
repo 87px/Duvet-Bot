@@ -22,6 +22,14 @@ module.exports = {
         .setName("motivo")
         .setDescription("O motivo do silêncio")
         .setRequired(false)
+    )
+    .addStringOption((option) =>
+      option
+        .setName("provas")
+        .setDescription(
+          "Link para a prova do motivo do silêncio (URL de imagem ou texto)"
+        )
+        .setRequired(false)
     ),
   async execute(interaction: any) {
     if (
@@ -38,6 +46,8 @@ module.exports = {
     const time = interaction.options.getInteger("tempo");
     const reason =
       interaction.options.getString("motivo") || "Nenhum motivo fornecido";
+    const proof =
+      interaction.options.getString("provas") || "Nenhuma prova fornecida";
 
     const member = interaction.guild.members.cache.get(user.id) as GuildMember;
     if (!member) {
@@ -48,7 +58,7 @@ module.exports = {
       return;
     }
 
-    let muteRole: any = interaction.guild.roles.cache.find(
+    let muteRole = interaction.guild.roles.cache.find(
       (role: any) => role.name === "Mutado"
     );
     if (!muteRole) {
@@ -59,7 +69,7 @@ module.exports = {
       });
 
       interaction.guild.channels.cache.forEach(async (channel: any) => {
-        await channel.permissionOverwrites.edit(muteRole!, {
+        await channel.permissionOverwrites.edit(muteRole, {
           SendMessages: false,
           AddReactions: false,
           Speak: false,
@@ -70,14 +80,16 @@ module.exports = {
     try {
       await member.roles.add(muteRole, reason);
       const embed = new EmbedBuilder()
-        .setColor("#ff0000")
-        .setTitle("Usuário Silenciado")
+        .setColor("#FF5555")
+        .setTitle("🔇 Usuário Silenciado")
+        .setDescription(`Detalhes da ação de silenciamento:`)
         .setThumbnail(user.displayAvatarURL())
         .addFields(
-          { name: "Usuário:", value: `${user.tag}`, inline: true },
-          { name: "ID:", value: `${user.id}`, inline: true },
-          { name: "Tempo:", value: `${time} minutos`, inline: true },
-          { name: "Motivo:", value: reason }
+          { name: "Usuário", value: `${user.tag}`, inline: true },
+          { name: "ID", value: `${user.id}`, inline: true },
+          { name: "Tempo", value: `${time} minutos`, inline: true },
+          { name: "Motivo", value: reason },
+          { name: "Provas", value: proof }
         )
         .setTimestamp()
         .setFooter({ text: `Silenciado por ${interaction.user.tag}` });
@@ -85,7 +97,7 @@ module.exports = {
       await interaction.reply({ embeds: [embed] });
 
       setTimeout(async () => {
-        await member.roles.remove(muteRole!, "Tempo de silêncio expirado");
+        await member.roles.remove(muteRole, "Tempo de silêncio expirado");
         await interaction.followUp({
           content: `${user.tag} não está mais silenciado.`,
           ephemeral: true,
